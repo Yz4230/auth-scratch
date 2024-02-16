@@ -3,7 +3,7 @@
   "module": "index.tsx",
   "type": "module",
   "scripts": {
-    "dev": "bun run index.tsx --watch",
+    "dev": "bun run --watch index.tsx",
     "generate": "drizzle-kit generate:sqlite",
     "migrate": "bun run lib/migrate.ts"
   },
