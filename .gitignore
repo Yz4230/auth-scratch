@@ -176,3 +176,6 @@ dist
 
 # vscode
 .vscode
+
+# database
+db.sqlite

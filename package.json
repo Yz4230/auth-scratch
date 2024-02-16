@@ -2,6 +2,11 @@
   "name": "auth-scratch",
   "module": "index.tsx",
   "type": "module",
+  "scripts": {
+    "dev": "bun run index.tsx --watch",
+    "generate": "drizzle-kit generate:sqlite",
+    "migrate": "bun run lib/migrate.ts"
+  },
   "devDependencies": {
     "@biomejs/biome": "^1.5.3",
     "@types/bun": "latest",
