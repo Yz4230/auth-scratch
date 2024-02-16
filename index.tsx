@@ -103,9 +103,9 @@ app.post("/login", async (c) => {
 
 	if (!user) return c.html(<LoginPage error="User not found" />);
 
-	const isAuthorized = await verifyPassword(password, user.password);
+	const isAuthenticated = await verifyPassword(password, user.password);
 
-	if (!isAuthorized) return c.html(<LoginPage error="Invalid password" />);
+	if (!isAuthenticated) return c.html(<LoginPage error="Invalid password" />);
 
 	const singer = new SignJWT({ userId: user.id } satisfies JWTCustomClaims);
 	const token = await singer
