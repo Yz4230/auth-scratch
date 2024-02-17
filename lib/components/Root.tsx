@@ -1,4 +1,4 @@
-import type { CSSProperties, PropsWithChildren } from "hono/jsx";
+import type { PropsWithChildren } from "hono/jsx";
 
 export default function Root({ children }: PropsWithChildren) {
 	return (
