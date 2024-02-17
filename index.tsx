@@ -27,7 +27,7 @@ app.use(logger());
 app.get("/", async (c) => {
 	const token = getCookie(c, COOKIE_TOKEN);
 
-	let username = null;
+	let username: string | undefined;
 	if (token) {
 		try {
 			const { payload } = await jwtVerify(token, SECRET);
@@ -38,9 +38,9 @@ app.get("/", async (c) => {
 				.from(users)
 				.where(eq(users.id, userId))
 				.limit(1)
-				.then((rows) => rows[0]);
+				.then((rows) => rows.at(0));
 
-			username = user.name;
+			if (user) username = user.name;
 		} catch (e) {
 			if (e instanceof JWTExpired) {
 				return c.redirect("/login");
@@ -85,7 +85,7 @@ app.post("/create", async (c) => {
 		.from(users)
 		.where(eq(users.name, username))
 		.limit(1)
-		.then((rows) => rows[0].exists > 0);
+		.then((rows) => rows.at(0)?.exists === 1);
 
 	if (existsUser) return c.html(<CreatePage error="User already exists" />);
 
