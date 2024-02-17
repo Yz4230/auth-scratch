@@ -89,8 +89,16 @@ app.post("/create", async (c) => {
 
 	if (existsUser) return c.html(<CreatePage error="User already exists" />);
 
-	const hash = await hashPassword(password);
-	await db.insert(users).values({ name: username, password: hash });
+	const saltU8 = new Uint8Array(16);
+	crypto.getRandomValues(saltU8);
+
+	const hash = await hashPassword(password, saltU8);
+	const saltHex = Buffer.from(saltU8).toString("hex");
+	await db.insert(users).values({
+		name: username,
+		password: hash,
+		salt: saltHex,
+	});
 
 	return c.redirect("/login");
 });
@@ -109,7 +117,8 @@ app.post("/login", async (c) => {
 
 	if (!user) return c.html(<LoginPage error="User not found" />);
 
-	const isAuthenticated = await verifyPassword(password, user.password);
+	const saltU8 = new Uint8Array(Buffer.from(user.salt, "hex"));
+	const isAuthenticated = await verifyPassword(password, user.password, saltU8);
 
 	if (!isAuthenticated) return c.html(<LoginPage error="Invalid password" />);
 

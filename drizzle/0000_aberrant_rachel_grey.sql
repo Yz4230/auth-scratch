@@ -6,5 +6,6 @@ CREATE TABLE `sessions` (
 CREATE TABLE `users` (
 	`id` integer PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
-	`password` text NOT NULL
+	`password` text NOT NULL,
+	`salt` text NOT NULL
 );
