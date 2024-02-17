@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "bun run --watch index.tsx",
     "generate": "drizzle-kit generate:sqlite",
+    "push": "drizzle-kit push:sqlite",
     "migrate": "bun run lib/migrate.ts"
   },
   "devDependencies": {
@@ -16,6 +17,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "better-sqlite3": "^9.4.1",
     "drizzle-orm": "^0.29.3",
     "hono": "^4.0.3",
     "jose": "^5.2.2",
