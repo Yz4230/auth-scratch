@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { logger } from "hono/logger";
 import { SignJWT, jwtVerify } from "jose";
-
+import { JWTExpired } from "jose/errors";
 import { z } from "zod";
 import Root from "./lib/components/Root";
 import { SECRET, hashPassword, verifyPassword } from "./lib/crypto";
@@ -29,17 +29,23 @@ app.get("/", async (c) => {
 
 	let username = null;
 	if (token) {
-		const { payload } = await jwtVerify(token, SECRET);
-		const { userId } = JWTCustomClaimsSchema.parse(payload);
+		try {
+			const { payload } = await jwtVerify(token, SECRET);
+			const { userId } = JWTCustomClaimsSchema.parse(payload);
 
-		const user = await db
-			.select({ name: users.name })
-			.from(users)
-			.where(eq(users.id, userId))
-			.limit(1)
-			.then((rows) => rows[0]);
+			const user = await db
+				.select({ name: users.name })
+				.from(users)
+				.where(eq(users.id, userId))
+				.limit(1)
+				.then((rows) => rows[0]);
 
-		username = user.name;
+			username = user.name;
+		} catch (e) {
+			if (e instanceof JWTExpired) {
+				return c.redirect("/login");
+			}
+		}
 	}
 
 	return c.html(
