@@ -1,15 +1,12 @@
-# auth-scratch
+# Authentication from Scratch
 
-To install dependencies:
+This repository is a example of how to create a simple authentication system from scratch using Bun, Hono and drizzle-orm.
+
+## Usage
 
 ```bash
 bun install
+bun run dev
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.0.26. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+and open your browser at [http://localhost:3000](http://localhost:3000)
