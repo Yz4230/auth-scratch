@@ -96,7 +96,7 @@ app.post("/create", async (c) => {
   const saltHex = Buffer.from(saltU8).toString("hex");
   await db.insert(users).values({
     name: username,
-    password: hash,
+    passwordHash: hash,
     salt: saltHex,
   });
 
@@ -119,7 +119,7 @@ app.post("/login", async (c) => {
 
   const saltU8 = new Uint8Array(Buffer.from(user.salt, "hex"));
   const isAuthenticated = await hashPassword(password, saltU8).then(
-    (hash) => hash === user.password,
+    (hash) => hash === user.passwordHash,
   );
 
   if (!isAuthenticated) return c.html(<LoginPage error="Invalid password" />);
