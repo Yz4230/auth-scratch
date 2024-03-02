@@ -9,21 +9,3 @@ export async function hashPassword(password: string, salt: Uint8Array) {
   const hash = await crypto.subtle.digest("SHA-256", toHash);
   return Buffer.from(hash).toString("hex");
 }
-
-export async function verifyPassword(
-  given: string,
-  correct: string,
-  salt: Uint8Array,
-) {
-  const hash = await hashPassword(given, salt);
-
-  let equal = true;
-  for (let i = 0; i < hash.length; i++) {
-    if (hash[i] !== correct[i]) {
-      equal = false;
-      // Don't break here to avoid timing attacks
-    }
-  }
-
-  return equal;
-}

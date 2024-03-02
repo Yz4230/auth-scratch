@@ -6,7 +6,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { JWTExpired } from "jose/errors";
 import { z } from "zod";
 import Root from "./lib/components/Root";
-import { SECRET, hashPassword, verifyPassword } from "./lib/crypto";
+import { SECRET, hashPassword } from "./lib/crypto";
 import { db } from "./lib/db";
 import CreatePage from "./lib/pages/CreatePage";
 import LoginPage from "./lib/pages/LoginPage";
@@ -118,7 +118,9 @@ app.post("/login", async (c) => {
   if (!user) return c.html(<LoginPage error="User not found" />);
 
   const saltU8 = new Uint8Array(Buffer.from(user.salt, "hex"));
-  const isAuthenticated = await verifyPassword(password, user.password, saltU8);
+  const isAuthenticated = await hashPassword(password, saltU8).then(
+    (hash) => hash === user.password,
+  );
 
   if (!isAuthenticated) return c.html(<LoginPage error="Invalid password" />);
 
