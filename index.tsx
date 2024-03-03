@@ -1,4 +1,4 @@
-import { count, eq, sql } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { logger } from "hono/logger";
@@ -81,7 +81,7 @@ app.post("/create", async (c) => {
     return c.html(<CreatePage error="Invalid input" />);
 
   const existsUser = await db
-    .select({ exists: count(sql`1`) })
+    .select({ exists: count() })
     .from(users)
     .where(eq(users.name, username))
     .limit(1)
