@@ -14,7 +14,10 @@ export const userRelations = relations(users, ({ many }) => ({
 
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey(),
-  userId: text("user_id").notNull(),
+  userId: integer("user_id").notNull(),
+  sessionKey: text("session").notNull(),
+  data: text("data").notNull(),
+  expires: integer("expires").notNull(),
 });
 
 export const sessionRelations = relations(sessions, ({ one }) => ({

@@ -2,48 +2,41 @@ import { count, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { logger } from "hono/logger";
-import { SignJWT, jwtVerify } from "jose";
-import { JWTExpired } from "jose/errors";
-import { z } from "zod";
 import Root from "./lib/components/Root";
-import { SECRET, hashPassword } from "./lib/crypto";
+import { hashPassword } from "./lib/crypto";
 import { db } from "./lib/db";
 import CreatePage from "./lib/pages/CreatePage";
 import LoginPage from "./lib/pages/LoginPage";
-import { users } from "./lib/schema";
+import { sessions, users } from "./lib/schema";
 
-export const COOKIE_TOKEN = "token";
+export const COOKIE_SESSION = "session";
+const SESSION_EXPIRATION = 1000 * 60 * 5; // 5 minutes for development
 
 export const app = new Hono();
-
-const JWTCustomClaimsSchema = z.object({
-  userId: z.number(),
-});
-
-type JWTCustomClaims = z.infer<typeof JWTCustomClaimsSchema>;
 
 app.use(logger());
 
 app.get("/", async (c) => {
-  const token = getCookie(c, COOKIE_TOKEN);
+  const sessionCookie = getCookie(c, COOKIE_SESSION);
 
   let username: string | undefined;
-  if (token) {
-    try {
-      const { payload } = await jwtVerify(token, SECRET);
-      const { userId } = JWTCustomClaimsSchema.parse(payload);
-
-      const user = await db
-        .select({ name: users.name })
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1)
-        .then((rows) => rows.at(0));
-
-      if (user) username = user.name;
-    } catch (e) {
-      if (e instanceof JWTExpired) {
-        return c.redirect("/login");
+  if (sessionCookie) {
+    const userSession = await db
+      .select()
+      .from(users)
+      .innerJoin(sessions, eq(users.id, sessions.userId))
+      .where(eq(sessions.sessionKey, sessionCookie))
+      .then((rows) => rows.at(0));
+    if (userSession) {
+      if (userSession.sessions.expires < Date.now()) {
+        await db.delete(sessions).where(eq(sessions.sessionKey, sessionCookie));
+      } else {
+        const newExpiration = Date.now() + SESSION_EXPIRATION;
+        await db
+          .update(sessions)
+          .set({ expires: newExpiration })
+          .where(eq(sessions.sessionKey, sessionCookie));
+        username = userSession.users.name;
       }
     }
   }
@@ -70,8 +63,12 @@ app.get("/", async (c) => {
 
 app.get("/login", (c) => c.html(<LoginPage />));
 app.get("/create", (c) => c.html(<CreatePage />));
-app.get("/logout", (c) => {
-  setCookie(c, COOKIE_TOKEN, "");
+app.get("/logout", async (c) => {
+  const sessionCookie = getCookie(c, COOKIE_SESSION);
+  if (sessionCookie) {
+    await db.delete(sessions).where(eq(sessions.sessionKey, sessionCookie));
+    setCookie(c, COOKIE_SESSION, "", { maxAge: 0 });
+  }
   return c.redirect("/");
 });
 
@@ -124,14 +121,17 @@ app.post("/login", async (c) => {
 
   if (!isAuthenticated) return c.html(<LoginPage error="Invalid password" />);
 
-  const singer = new SignJWT({ userId: user.id } satisfies JWTCustomClaims);
-  const token = await singer
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("15m")
-    .sign(SECRET);
-
-  setCookie(c, COOKIE_TOKEN, token, { httpOnly: true });
+  const sessionKey = crypto.randomUUID();
+  const expires = Date.now() + SESSION_EXPIRATION;
+  await db.insert(sessions).values({
+    userId: user.id,
+    sessionKey,
+    data: "{}",
+    expires,
+  });
+  setCookie(c, COOKIE_SESSION, sessionKey, {
+    maxAge: SESSION_EXPIRATION / 1000,
+  });
 
   return c.redirect("/");
 });
