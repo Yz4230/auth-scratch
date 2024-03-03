@@ -8,8 +8,9 @@ import { db } from "./lib/db";
 import CreatePage from "./lib/pages/CreatePage";
 import LoginPage from "./lib/pages/LoginPage";
 import { sessions, users } from "./lib/schema";
+import { isString } from "./lib/utils";
 
-export const COOKIE_SESSION = "session";
+const COOKIE_SESSION = "session";
 const SESSION_EXPIRATION = 1000 * 60 * 5; // 5 minutes for development
 
 export const app = new Hono();
@@ -74,8 +75,10 @@ app.get("/logout", async (c) => {
 
 app.post("/create", async (c) => {
   const form = await c.req.formData();
-  const username = form.get("username") as string;
-  const password = form.get("password") as string;
+  const username = form.get("username");
+  const password = form.get("password");
+  if (!isString(username) || !isString(password))
+    return c.html(<CreatePage error="Invalid input" />);
 
   const existsUser = await db
     .select({ exists: count(sql`1`) })
@@ -102,8 +105,10 @@ app.post("/create", async (c) => {
 
 app.post("/login", async (c) => {
   const form = await c.req.formData();
-  const username = form.get("username") as string;
-  const password = form.get("password") as string;
+  const username = form.get("username");
+  const password = form.get("password");
+  if (!isString(username) || !isString(password))
+    return c.html(<LoginPage error="Invalid input" />);
 
   const user = await db
     .select()
