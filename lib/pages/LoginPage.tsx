@@ -19,8 +19,8 @@ export default function LoginPage({ csrfToken, error }: Props) {
         <AuthenticationFields />
         <input type="hidden" name="csrf" value={csrfToken} />
         <p class="text-muted">
-          If you don't have an account, you can <a href="/create">create</a>{" "}
-          here.
+          If you don't have an account, you can create{" "}
+          <a href="/create">here</a>.
         </p>
         {error && <AlertError>{error}</AlertError>}
         <button type="submit" class="btn btn-primary">

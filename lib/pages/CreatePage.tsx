@@ -13,8 +13,8 @@ export default function CreatePage({ error }: { error?: string }) {
       >
         <AuthenticationFields />
         <p class="text-muted">
-          If you already have an account, you can <a href="/login">login</a>{" "}
-          here.
+          If you already have an account, you can login{" "}
+          <a href="/login">here</a>.
         </p>
         {error && <AlertError>{error}</AlertError>}
         <button type="submit" class="btn btn-primary">
