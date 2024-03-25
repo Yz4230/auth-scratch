@@ -2,7 +2,12 @@ import AlertError from "../components/AlertError";
 import AuthenticationFields from "../components/AuthenticationFields";
 import Root from "../components/Root";
 
-export default function LoginPage({ error }: { error?: string }) {
+type Props = {
+  csrfToken: string;
+  error?: string;
+};
+
+export default function LoginPage({ csrfToken, error }: Props) {
   return (
     <Root>
       <form
@@ -12,6 +17,7 @@ export default function LoginPage({ error }: { error?: string }) {
         class="mx-auto mt-4"
       >
         <AuthenticationFields />
+        <input type="hidden" name="csrf" value={csrfToken} />
         <p class="text-muted">
           If you don't have an account, you can <a href="/create">create</a>{" "}
           here.

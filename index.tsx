@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { logger } from "hono/logger";
 import Root from "./lib/components/Root";
-import { hashPassword } from "./lib/crypto";
+import { createCsrfToken, hashPassword } from "./lib/crypto";
 import { db } from "./lib/db";
 import CreatePage from "./lib/pages/CreatePage";
 import LoginPage from "./lib/pages/LoginPage";
@@ -11,6 +11,7 @@ import { sessions, users } from "./lib/schema";
 import { isString } from "./lib/utils";
 
 const COOKIE_SESSION = "session";
+const COOKIE_CSRF = "csrf";
 const SESSION_EXPIRATION = 1000 * 60 * 5; // 5 minutes for development
 
 export const app = new Hono();
@@ -62,7 +63,12 @@ app.get("/", async (c) => {
   );
 });
 
-app.get("/login", (c) => c.html(<LoginPage />));
+app.get("/login", (c) => {
+  const csrfToken = createCsrfToken();
+  setCookie(c, COOKIE_CSRF, csrfToken, { httpOnly: true });
+  return c.html(<LoginPage csrfToken={csrfToken} />);
+});
+
 app.get("/create", (c) => c.html(<CreatePage />));
 app.get("/logout", async (c) => {
   const sessionCookie = getCookie(c, COOKIE_SESSION);
@@ -107,8 +113,22 @@ app.post("/login", async (c) => {
   const form = await c.req.formData();
   const username = form.get("username");
   const password = form.get("password");
-  if (!isString(username) || !isString(password))
-    return c.html(<LoginPage error="Invalid input" />);
+  const csrf = form.get("csrf");
+
+  const csrfToken = getCookie(c, COOKIE_CSRF);
+  if (csrfToken !== csrf) {
+    const newCsrfToken = createCsrfToken();
+    setCookie(c, COOKIE_CSRF, newCsrfToken, { httpOnly: true });
+    return c.html(
+      <LoginPage error="Invalid CSRF Token" csrfToken={newCsrfToken} />,
+    );
+  }
+
+  if (!isString(username) || !isString(password)) {
+    const newCsrfToken = createCsrfToken();
+    setCookie(c, COOKIE_CSRF, newCsrfToken, { httpOnly: true });
+    return c.html(<LoginPage error="Invalid input" csrfToken={newCsrfToken} />);
+  }
 
   const user = await db
     .select()
@@ -117,14 +137,26 @@ app.post("/login", async (c) => {
     .limit(1)
     .then((rows) => rows[0]);
 
-  if (!user) return c.html(<LoginPage error="User not found" />);
+  if (!user) {
+    const newCsrfToken = createCsrfToken();
+    setCookie(c, COOKIE_CSRF, newCsrfToken, { httpOnly: true });
+    return c.html(
+      <LoginPage error="User not found" csrfToken={newCsrfToken} />,
+    );
+  }
 
   const saltU8 = new Uint8Array(Buffer.from(user.salt, "hex"));
   const isAuthenticated = await hashPassword(password, saltU8).then(
     (hash) => hash === user.passwordHash,
   );
 
-  if (!isAuthenticated) return c.html(<LoginPage error="Invalid password" />);
+  if (!isAuthenticated) {
+    const newCsrfToken = createCsrfToken();
+    setCookie(c, COOKIE_CSRF, newCsrfToken, { httpOnly: true });
+    return c.html(
+      <LoginPage error="Invalid password" csrfToken={newCsrfToken} />,
+    );
+  }
 
   const sessionKey = crypto.randomUUID();
   const expires = Date.now() + SESSION_EXPIRATION;
@@ -134,6 +166,8 @@ app.post("/login", async (c) => {
     data: "{}",
     expires,
   });
+
+  setCookie(c, COOKIE_CSRF, "", { maxAge: 0 });
   setCookie(c, COOKIE_SESSION, sessionKey, {
     maxAge: SESSION_EXPIRATION / 1000,
   });
