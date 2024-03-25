@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
@@ -8,21 +7,12 @@ export const users = sqliteTable("users", {
   salt: text("salt").notNull(),
 });
 
-export const userRelations = relations(users, ({ many }) => ({
-  sessions: many(sessions),
-}));
-
 export const sessions = sqliteTable("sessions", {
   id: integer("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   sessionKey: text("session").notNull(),
   data: text("data").notNull(),
   expires: integer("expires").notNull(),
 });
-
-export const sessionRelations = relations(sessions, ({ one }) => ({
-  user: one(users, {
-    fields: [sessions.userId],
-    references: [users.id],
-  }),
-}));
