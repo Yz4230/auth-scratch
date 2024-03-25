@@ -135,7 +135,7 @@ app.post("/login", async (c) => {
     .from(users)
     .where(eq(users.name, username))
     .limit(1)
-    .then((rows) => rows[0]);
+    .then((rows) => rows.at(0));
 
   if (!user) {
     const newCsrfToken = createCsrfToken();
